@@ -1,0 +1,9 @@
+CustomerCode,CustomerName,CustomerEmail,InvoiceNumber,InvoiceDate,DueDate,InvoiceAmount
+DEMO-001,Aarav Kirana Mart,accounts@aarav-kirana.example,DM-2026-0101,2026-06-01,2026-07-01,"1,25,000.00"
+DEMO-001,Aarav Kirana Mart,accounts@aarav-kirana.example,DM-2026-0142,2026-08-10,2026-09-09,48500.00
+DEMO-002,Bharat General Stores,payables@bharat-general.example,DM-2026-0155,2026-08-20,2026-09-19,72000.00
+DEMO-002,Bharat General Stores,payables@bharat-general.example,DM-2026-0188,2026-09-25,2026-10-15,15000.00
+DEMO-003,Chennai Fresh Supplies,,DM-2026-0190,2026-09-28,2026-10-28,36250.50
+DEMO-004,Deccan Pharma Retail,finance@deccan-pharma.example,DM-2026-0201,2026-10-01,2026-10-21,9800.00
+DEMO-005,Eastern Hardware Co,ap@eastern-hardware.example,DM-2026-0075,2026-05-15,2026-06-14,210000.00
+DEMO-005,Eastern Hardware Co,ap@eastern-hardware.example,DM-2026-0076,15/05/2026,14/06/2026,18400.00

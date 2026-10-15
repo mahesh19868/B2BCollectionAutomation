@@ -1,0 +1,96 @@
+@model InvoiceDetail
+@{
+    var s = Model.Summary;
+    var f = s.Financials;
+    ViewData["Title"] = "Invoice " + s.InvoiceNumber;
+    var returnUrl = Context.Request.Path.ToString();
+    var noCustomerColumn = new ViewDataDictionary(ViewData) { ["ShowCustomer"] = false };
+}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+    <li class="breadcrumb-item"><a asp-controller="Customers" asp-action="Details" asp-route-id="@s.CustomerId">@s.CustomerName</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Invoice @s.InvoiceNumber</li>
+</ol></nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Invoice @s.InvoiceNumber</h1>
+        <div>
+            @Ui.Tag(Ui.Badge(f.Status, f.IsPartiallyPaid))
+            @if (f.IsPartiallyPaid) { <span class="badge text-bg-light border">Partially paid</span> }
+            @if (s.IsDisputed) { <span class="badge text-bg-warning">Disputed</span> }
+            @if (s.RemindersPaused) { <span class="badge text-bg-warning">Reminders paused</span> }
+            @if (s.CustomerRemindersPaused) { <span class="badge text-bg-warning">Customer reminders paused</span> }
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary btn-sm" asp-controller="Reminders" asp-action="Preview" asp-route-invoiceId="@s.Id">Preview reminder</a>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@s.CustomerId" asp-route-invoiceId="@s.Id">Add note</a>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="Promises" asp-action="Create" asp-route-customerId="@s.CustomerId" asp-route-invoiceId="@s.Id">Record promise</a>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="Payments" asp-action="Create" asp-route-customerId="@s.CustomerId">Record payment</a>
+        <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@s.Id">Correct invoice</a>
+        <form asp-action="Flags" asp-route-id="@s.Id" method="post" class="d-inline">
+            <input type="hidden" name="disputed" value="@(!s.IsDisputed ? "true" : "false")" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button type="submit" class="btn btn-outline-warning btn-sm">@(s.IsDisputed ? "Clear dispute" : "Mark disputed")</button>
+        </form>
+        <form asp-action="Flags" asp-route-id="@s.Id" method="post" class="d-inline">
+            <input type="hidden" name="remindersPaused" value="@(!s.RemindersPaused ? "true" : "false")" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button type="submit" class="btn btn-outline-warning btn-sm">@(s.RemindersPaused ? "Resume reminders" : "Pause reminders")</button>
+        </form>
+    </div>
+</div>
+
+@if (f.DataError is not null)
+{
+    <div class="alert alert-danger" role="alert"><strong>Data error:</strong> @f.DataError This invoice is excluded from totals until corrected.</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <dl class="row mb-0">
+            <dt class="col-6">Customer</dt><dd class="col-6"><a asp-controller="Customers" asp-action="Details" asp-route-id="@s.CustomerId">@s.CustomerName</a></dd>
+            <dt class="col-6">Invoice date</dt><dd class="col-6">@Ui.Date(s.InvoiceDate)</dd>
+            <dt class="col-6">Due date</dt><dd class="col-6">@Ui.Date(s.DueDate)</dd>
+            <dt class="col-6">Days overdue</dt><dd class="col-6">@(f.DaysOverdue > 0 ? f.DaysOverdue + " (" + Ui.Label(f.Bucket) + ")" : "Not overdue")</dd>
+            <dt class="col-6">Invoice amount</dt><dd class="col-6">@Ui.Money(f.InvoiceAmount)</dd>
+            <dt class="col-6">Payments allocated</dt><dd class="col-6">@Ui.Money(f.AllocatedAmount)</dd>
+            <dt class="col-6">Outstanding</dt><dd class="col-6 fw-semibold">@Ui.Money(f.Outstanding)</dd>
+            @if (Model.ExternalReference is not null)
+            {
+                <dt class="col-6">External reference</dt><dd class="col-6">@Model.ExternalReference</dd>
+            }
+        </dl>
+        <p class="small text-muted">Calculated as of @Ui.Date(Model.AsOfDate). Outstanding = invoice amount − allocated payments.</p>
+
+        <h2 class="h5 mt-3">Payment allocations</h2>
+        @if (Model.Allocations.Count == 0)
+        {
+            <p class="text-muted">No payments allocated.</p>
+        }
+        else
+        {
+            <table class="table table-sm">
+                <thead><tr><th scope="col">Payment date</th><th scope="col">Reference</th><th scope="col" class="text-end">Allocated</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Allocations)
+                    {
+                        <tr>
+                            <td><a asp-controller="Payments" asp-action="Details" asp-route-id="@a.PaymentId">@Ui.Date(a.PaymentDate)</a></td>
+                            <td>@a.Reference</td>
+                            <td class="text-end">@Ui.Money(a.AllocatedAmount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="col-lg-7">
+        <h2 class="h5">Promises to pay</h2>
+        <partial name="_PromiseTable" model="Model.Promises" view-data="noCustomerColumn" />
+        <h2 class="h5 mt-3">Reminders</h2>
+        <partial name="_ReminderTable" model="Model.Reminders" view-data="noCustomerColumn" />
+        <h2 class="h5 mt-3">History</h2>
+        <partial name="_ActivityList" model="Model.Activities" />
+    </div>
+</div>

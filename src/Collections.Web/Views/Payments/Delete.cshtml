@@ -1,0 +1,18 @@
+@model PaymentDetail
+@{
+    ViewData["Title"] = "Delete payment";
+}
+<h1 class="h3">Delete payment?</h1>
+<div class="alert alert-warning col-lg-7" role="alert">
+    You are about to delete the payment of <strong>@Ui.Money(Model.Amount)</strong> from <strong>@Model.CustomerName</strong>
+    dated @Ui.Date(Model.PaymentDate)@(Model.Reference is null ? "" : $" (ref {Model.Reference})").
+    @if (Model.Allocations.Count > 0)
+    {
+        <text>Its allocations to @string.Join(", ", Model.Allocations.Select(a => a.InvoiceNumber)) will be removed and those balances will increase.</text>
+    }
+    The deletion is recorded in the customer history.
+</div>
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+    <button type="submit" class="btn btn-danger">Delete payment</button>
+    <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.Id">Cancel</a>
+</form>

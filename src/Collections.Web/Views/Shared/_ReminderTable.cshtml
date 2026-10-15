@@ -1,0 +1,45 @@
+@model IReadOnlyList<ReminderItem>
+@inject BusinessService Business
+@{
+    var tz = (await Business.GetCurrentAsync(default)).TimeZoneId;
+    var showCustomer = ViewData["ShowCustomer"] as bool? ?? true;
+}
+@if (Model.Count == 0)
+{
+    <p class="text-muted">No reminders sent.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Created</th>
+                    @if (showCustomer) { <th scope="col">Customer</th> }
+                    <th scope="col">Invoice</th>
+                    <th scope="col">Recipient</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-end">Attempts</th>
+                    <th scope="col">Sent by</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td><a asp-controller="Reminders" asp-action="Details" asp-route-id="@r.Id">@Ui.DateTime(r.CreatedAtUtc, tz)</a></td>
+                        @if (showCustomer) { <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@r.CustomerId">@r.CustomerName</a></td> }
+                        <td>@r.InvoiceNumber</td>
+                        <td>@r.Recipient</td>
+                        <td>
+                            @Ui.Tag(Ui.Badge(r.Status))
+                            @if (r.Status == ReminderStatus.Failed && r.LastError is not null) { <div class="small text-danger">@r.LastError</div> }
+                        </td>
+                        <td class="text-end">@r.AttemptCount</td>
+                        <td class="small">@(r.CreatedBy ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

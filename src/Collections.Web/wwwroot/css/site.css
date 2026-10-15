@@ -1,0 +1,41 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Visible keyboard focus everywhere */
+a:focus-visible, .btn:focus-visible, .form-control:focus, .form-select:focus, .form-check-input:focus, .page-link:focus {
+  outline: 3px solid #1a5fb4;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* User-entered notes: keep line breaks, never interpret as HTML (Razor encodes the text). */
+.text-pre-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.email-preview {
+  white-space: pre-wrap;
+  font-family: var(--bs-font-monospace);
+  font-size: 0.9rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+.table td, .table th {
+  vertical-align: middle;
+}
+
+/* Darker text on warning badges for contrast */
+.badge.text-bg-warning {
+  color: #212529 !important;
+}

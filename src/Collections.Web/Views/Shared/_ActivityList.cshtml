@@ -1,0 +1,35 @@
+@model IReadOnlyList<ActivityItem>
+@inject BusinessService Business
+@{
+    var tz = (await Business.GetCurrentAsync(default)).TimeZoneId;
+}
+@if (Model.Count == 0)
+{
+    <p class="text-muted">No follow-up history yet.</p>
+}
+else
+{
+    <ul class="list-group mb-3">
+        @foreach (var a in Model)
+        {
+            <li class="list-group-item">
+                <div class="d-flex flex-wrap justify-content-between gap-2">
+                    <div>
+                        <span class="badge @(a.Type == ActivityType.System ? "text-bg-light border" : "text-bg-primary")">@Ui.Label(a.Type)</span>
+                        @if (a.InvoiceNumber is not null)
+                        {
+                            <span class="small">Invoice <a asp-controller="Invoices" asp-action="Details" asp-route-id="@a.InvoiceId">@a.InvoiceNumber</a></span>
+                        }
+                        @if (a.Outcome is not null) { <strong class="small">· @a.Outcome</strong> }
+                    </div>
+                    <div class="small text-muted">@Ui.DateTime(a.OccurredAtUtc, tz) · @(a.CreatedBy ?? "system")</div>
+                </div>
+                <div class="text-pre-wrap mt-1">@a.Notes</div>
+                @if (a.NextFollowUpDate is not null)
+                {
+                    <div class="small mt-1">Next follow-up: <strong>@Ui.Date(a.NextFollowUpDate)</strong></div>
+                }
+            </li>
+        }
+    </ul>
+}

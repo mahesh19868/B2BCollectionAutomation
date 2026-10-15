@@ -1,0 +1,85 @@
+@model ImportIndexModel
+@using Collections.Core.Imports
+@{
+    ViewData["Title"] = "Import invoices";
+}
+<h1 class="h3 mb-3">Import invoices</h1>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">1. Prepare a CSV file</h2>
+                <p class="mb-2"><a class="btn btn-outline-primary btn-sm" asp-action="Template">Download CSV template</a></p>
+                <ul class="small mb-0">
+                    <li>Required columns: <code>CustomerName</code>, <code>InvoiceNumber</code>, <code>InvoiceDate</code>, <code>DueDate</code>, <code>InvoiceAmount</code>. Optional: <code>CustomerCode</code>, <code>CustomerEmail</code>.</li>
+                    <li>Dates: @ImportValueParser.DateFormatsDescription. Numeric dates are read day-first.</li>
+                    <li>Amounts: @ImportValueParser.AmountFormatDescription. Must be greater than zero.</li>
+                    <li>Due date cannot be before the invoice date.</li>
+                    <li>Save from Excel as <strong>CSV UTF-8 (Comma delimited)</strong>. Limit: @(Model.Limits.MaxFileBytes / 1024) KB and @Model.Limits.MaxRows rows per file.</li>
+                    <li>Payment columns are not imported. Record payments on the <a asp-controller="Payments" asp-action="Index">Payments</a> page.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">2. Upload and review</h2>
+                @if (Model.FileErrors.Count > 0)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <strong>The file was not accepted:</strong>
+                        <ul class="mb-0">
+                            @foreach (var e in Model.FileErrors) { <li>@e</li> }
+                        </ul>
+                    </div>
+                }
+                <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">CSV file</label>
+                        <input id="file" name="file" type="file" accept=".csv,text/csv" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload and preview</button>
+                </form>
+                <h3 class="h6 mt-3">How duplicates are handled</h3>
+                <ul class="small mb-0">
+                    <li>An invoice is identified by its <strong>invoice number</strong> within your business.</li>
+                    <li>Invoices already imported with the same details are <strong>skipped</strong>, so re-importing a file never creates duplicates.</li>
+                    <li>Existing invoices with different dates or amount are shown as <strong>updates</strong> and changed only if you approve updates.</li>
+                    <li>An invoice number repeated in the file, or used by a different customer, is <strong>rejected</strong>.</li>
+                    <li>Existing customer details are never changed by an import. Nothing is imported and no reminders are sent until you confirm.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="h5 mt-4">Recent imports</h2>
+@if (Model.Recent.Count == 0)
+{
+    <p class="text-muted">No imports yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th scope="col">Uploaded</th><th scope="col">File</th><th scope="col">Status</th><th scope="col" class="text-end">Rows</th><th scope="col" class="text-end">Created</th><th scope="col" class="text-end">Updated</th><th scope="col" class="text-end">Skipped</th><th scope="col" class="text-end">Rejected</th></tr></thead>
+            <tbody>
+                @foreach (var b in Model.Recent)
+                {
+                    <tr>
+                        <td><a asp-action="Batch" asp-route-id="@b.Id">@Ui.DateTime(b.UploadedAtUtc, Model.TimeZoneId)</a></td>
+                        <td>@b.FileName</td>
+                        <td>@(b.Status == ImportBatchStatus.Previewed ? "Awaiting confirmation" : b.Status.ToString())</td>
+                        <td class="text-end">@b.TotalRows</td>
+                        <td class="text-end">@b.CreatedCount</td>
+                        <td class="text-end">@b.UpdatedCount</td>
+                        <td class="text-end">@b.SkippedCount</td>
+                        <td class="text-end">@b.RejectedRows</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

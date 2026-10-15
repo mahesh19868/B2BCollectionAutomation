@@ -1,0 +1,12 @@
+@{
+    var status = TempData[Collections.Web.Controllers.AppController.StatusMessageKey] as string;
+    var error = TempData[Collections.Web.Controllers.AppController.ErrorMessageKey] as string;
+}
+@if (!string.IsNullOrEmpty(status))
+{
+    <div class="alert alert-success" role="status">@status</div>
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger" role="alert"><strong>Error:</strong> @error</div>
+}

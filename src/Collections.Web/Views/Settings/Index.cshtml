@@ -1,0 +1,61 @@
+@model SettingsFormModel
+@using Collections.Core.Reminders
+@{
+    ViewData["Title"] = "Settings";
+}
+<h1 class="h3 mb-3">Business settings</h1>
+<form asp-action="Index" method="post" class="col-lg-8" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <h2 class="h5">Business</h2>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label asp-for="Name" class="form-label">Business name (shown in reminders)</label>
+            <input asp-for="Name" class="form-control" maxlength="200" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="tz">Time zone</label>
+            <input id="tz" class="form-control" value="@Model.TimeZoneId (dates and overdue status use this calendar)" readonly />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ContactEmail" class="form-label">Contact email (reply-to for reminders)</label>
+            <input asp-for="ContactEmail" type="email" class="form-control" />
+            <span asp-validation-for="ContactEmail" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ContactPhone" class="form-label">Contact phone</label>
+            <input asp-for="ContactPhone" class="form-control" />
+            <span asp-validation-for="ContactPhone" class="text-danger small"></span>
+        </div>
+    </div>
+
+    <h2 class="h5">Email reminders</h2>
+    <p class="small text-muted">Reminders are sent only when a user previews and clicks Send. Automated scheduled reminders are not enabled in this version.</p>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="ReminderCooldownDays" class="form-label">Cooldown (days)</label>
+            <input asp-for="ReminderCooldownDays" type="number" min="1" max="90" class="form-control" aria-describedby="cooldownHelp" />
+            <div id="cooldownHelp" class="form-text">Minimum days between reminders for the same invoice.</div>
+            <span asp-validation-for="ReminderCooldownDays" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="ReminderSubjectTemplate" class="form-label">Subject template</label>
+            <input asp-for="ReminderSubjectTemplate" class="form-control" maxlength="@ReminderTemplateRenderer.SubjectMaxLength" />
+            <div class="form-text">Do not put confidential account details in the subject.</div>
+            <span asp-validation-for="ReminderSubjectTemplate" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="ReminderBodyTemplate" class="form-label">Body template (plain text)</label>
+            <textarea asp-for="ReminderBodyTemplate" class="form-control font-monospace" rows="12" maxlength="@ReminderTemplateRenderer.BodyMaxLength"></textarea>
+            <div class="form-text">
+                Available placeholders: @string.Join(", ", ReminderTemplateRenderer.Placeholders.Select(p => "{{" + p + "}}")).
+                Keep the tone neutral and professional; avoid threats or claims about legal action.
+            </div>
+            <span asp-validation-for="ReminderBodyTemplate" class="text-danger small"></span>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Save settings</button>
+</form>
+<form asp-action="ResetTemplate" method="post" class="mt-2">
+    <button type="submit" class="btn btn-link px-0">Load the default reminder template</button>
+</form>

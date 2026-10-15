@@ -1,0 +1,23 @@
+@model PagedResult<ReminderItem>
+@{
+    ViewData["Title"] = "Reminder log";
+    var status = ViewData["Status"] as ReminderStatus?;
+}
+<h1 class="h3">Reminder log</h1>
+<p class="small text-muted">Every reminder attempt is recorded here. To send a reminder, open an invoice and choose <em>Preview reminder</em>. Automated reminders are not enabled.</p>
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link @(status is null ? "active" : "")" asp-action="Index">All</a></li>
+    @foreach (var s in new[] { ReminderStatus.Sent, ReminderStatus.Failed, ReminderStatus.Queued })
+    {
+        <li class="nav-item"><a class="nav-link @(status == s ? "active" : "")" asp-action="Index" asp-route-status="@s">@Ui.Badge(s).Text</a></li>
+    }
+</ul>
+@if (Model.TotalCount == 0)
+{
+    <p class="text-muted">No reminders in this view. Find an invoice to remind in the <a asp-controller="Worklist" asp-action="Index">worklist</a>.</p>
+}
+else
+{
+    <partial name="_ReminderTable" model="Model.Items" />
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount)" />
+}

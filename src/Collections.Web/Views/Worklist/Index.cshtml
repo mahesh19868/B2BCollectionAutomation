@@ -1,0 +1,143 @@
+@model WorklistModel
+@{
+    ViewData["Title"] = "Follow-up worklist";
+    var f = Model.Filter;
+    var r = Model.Result;
+}
+<div class="d-flex flex-wrap justify-content-between align-items-baseline mb-2">
+    <h1 class="h3 mb-0">Follow-up worklist</h1>
+    <span class="text-muted small">As of @Ui.Date(r.AsOfDate) · @r.Page.TotalCount invoice(s) · @Ui.Money(r.FilteredOutstanding) outstanding</span>
+</div>
+<p class="small text-muted">@WorklistPrioritizer.Explanation</p>
+
+<form method="get" class="row g-2 align-items-end mb-3" role="search" aria-label="Worklist filters">
+    <div class="col-sm-6 col-lg-2">
+        <label for="Search" class="form-label small">Customer or invoice</label>
+        <input id="Search" name="Search" value="@f.Search" class="form-control" />
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <label for="Status" class="form-label small">Due status</label>
+        <select id="Status" name="Status" class="form-select">
+            @foreach (var (value, label) in new[] { (WorklistStatus.AllOutstanding, "All outstanding"), (WorklistStatus.Overdue, "Overdue"), (WorklistStatus.DueToday, "Due today"), (WorklistStatus.Upcoming, "Not yet due") })
+            {
+                <option value="@value" selected="@(f.Status == value)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <label for="Bucket" class="form-label small">Age</label>
+        <select id="Bucket" name="Bucket" class="form-select">
+            <option value="">All ages</option>
+            @foreach (var b in new[] { AgeingBucket.NotDue, AgeingBucket.Days1To30, AgeingBucket.Days31To60, AgeingBucket.Days61Plus })
+            {
+                <option value="@b" selected="@(f.Bucket == b)">@Ui.Label(b)</option>
+            }
+        </select>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <label for="MinAmount" class="form-label small">Min. outstanding (₹)</label>
+        <input id="MinAmount" name="MinAmount" type="number" min="0" step="0.01" value="@Ui.InputAmount(f.MinAmount)" class="form-control" />
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <label for="Promise" class="form-label small">Promise to pay</label>
+        <select id="Promise" name="Promise" class="form-select">
+            @foreach (var (value, label) in new[] { (WorklistPromiseFilter.Any, "Any"), (WorklistPromiseFilter.Missed, "Promise date passed"), (WorklistPromiseFilter.Open, "Has open promise"), (WorklistPromiseFilter.None, "No open promise") })
+            {
+                <option value="@value" selected="@(f.Promise == value)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="DueForFollowUpOnly" name="DueForFollowUpOnly" value="true" checked="@f.DueForFollowUpOnly" />
+            <label class="form-check-label small" for="DueForFollowUpOnly">Hide if next follow-up is after today</label>
+        </div>
+        <button type="submit" class="btn btn-outline-primary btn-sm">Apply</button>
+        <a class="btn btn-link btn-sm" asp-action="Index">Reset</a>
+    </div>
+</form>
+
+@if (r.Page.TotalCount == 0)
+{
+    <div class="card"><div class="card-body">
+        <p class="mb-0">Nothing to follow up for these filters. <a asp-action="Index">Clear filters</a> · <a asp-controller="Import" asp-action="Index">Import invoices</a></p>
+    </div></div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Priority</th>
+                    <th scope="col">Customer</th>
+                    <th scope="col">Invoice</th>
+                    <th scope="col">Invoice date</th>
+                    <th scope="col">Due date</th>
+                    <th scope="col" class="text-end">Outstanding</th>
+                    <th scope="col" class="text-end">Days overdue</th>
+                    <th scope="col">Last follow-up</th>
+                    <th scope="col">Next follow-up</th>
+                    <th scope="col">Promise</th>
+                    <th scope="col">Last reminder</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in r.Page.Items)
+                {
+                    var inv = item.Invoice;
+                    <tr>
+                        <td>@item.PriorityGroup</td>
+                        <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@inv.CustomerId">@inv.CustomerName</a></td>
+                        <td>
+                            <a asp-controller="Invoices" asp-action="Details" asp-route-id="@inv.Id">@inv.InvoiceNumber</a>
+                            @if (inv.IsDisputed) { <span class="badge text-bg-warning">Disputed</span> }
+                        </td>
+                        <td>@Ui.Date(inv.InvoiceDate)</td>
+                        <td>@Ui.Date(inv.DueDate) @Ui.Tag(Ui.Badge(inv.Financials.Status, inv.Financials.IsPartiallyPaid))</td>
+                        <td class="text-end">@Ui.Money(inv.Financials.Outstanding)</td>
+                        <td class="text-end">@(inv.Financials.DaysOverdue > 0 ? inv.Financials.DaysOverdue.ToString() : "")</td>
+                        <td class="small">@Ui.DateTime(item.LastFollowUpUtc, r.TimeZoneId)</td>
+                        <td class="small">@Ui.Date(item.NextFollowUpDate)</td>
+                        <td class="small">
+                            @if (item.Promise is { } p)
+                            {
+                                <div>@Ui.Money(p.Amount) by @Ui.Date(p.PromisedDate)@(p.IsAccountLevel ? " (account)" : "")</div>
+                                @Ui.Tag(Ui.Badge(p.State))
+                            }
+                            else
+                            {
+                                <text>—</text>
+                            }
+                        </td>
+                        <td class="small">
+                            @if (item.LastReminderStatus is { } rs)
+                            {
+                                @Ui.Tag(Ui.Badge(rs)) <div>@Ui.DateTime(item.LastReminderUtc, r.TimeZoneId)</div>
+                            }
+                            else
+                            {
+                                <text>None</text>
+                            }
+                            @if (inv.RemindersPaused || inv.CustomerRemindersPaused) { <div><span class="badge text-bg-warning">Paused</span></div> }
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@inv.CustomerId" asp-route-invoiceId="@inv.Id" asp-route-returnUrl="@Model.CurrentUrl">Note</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Promises" asp-action="Create" asp-route-customerId="@inv.CustomerId" asp-route-invoiceId="@inv.Id" asp-route-returnUrl="@Model.CurrentUrl">Promise</a>
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Reminders" asp-action="Preview" asp-route-invoiceId="@inv.Id">Reminder</a>
+                                <form asp-controller="Invoices" asp-action="Flags" asp-route-id="@inv.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="remindersPaused" value="@(!inv.RemindersPaused ? "true" : "false")" />
+                                    <input type="hidden" name="returnUrl" value="@Model.CurrentUrl" />
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">@(inv.RemindersPaused ? "Resume" : "Pause")</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="(r.Page.Page, r.Page.TotalPages, r.Page.TotalCount)" />
+}

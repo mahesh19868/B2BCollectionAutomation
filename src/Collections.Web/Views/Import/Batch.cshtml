@@ -1,0 +1,110 @@
+@model ImportBatchModel
+@{
+    var b = Model.Batch;
+    var isPreview = b.Status == ImportBatchStatus.Previewed;
+    ViewData["Title"] = isPreview ? "Review import" : "Import result";
+    var creates = b.Rows.Count(r => r.PlannedAction == ImportRowAction.Create);
+    var updates = b.Rows.Count(r => r.PlannedAction == ImportRowAction.Update);
+    var unchanged = b.Rows.Count(r => r.PlannedAction == ImportRowAction.Unchanged);
+    var rejected = b.Rows.Count(r => r.PlannedAction == ImportRowAction.Error);
+}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Import</a></li><li class="breadcrumb-item active" aria-current="page">@b.FileName</li></ol></nav>
+<h1 class="h3">@ViewData["Title"]: @b.FileName</h1>
+<p class="text-muted small">Uploaded @Ui.DateTime(b.UploadedAtUtc, Model.TimeZoneId)@(b.CompletedAtUtc is null ? "" : " · completed " + Ui.DateTime(b.CompletedAtUtc, Model.TimeZoneId)) · Status: <strong>@b.Status</strong></p>
+
+@foreach (var message in Ui.Lines(b.FileMessages))
+{
+    <div class="alert alert-info py-2">@message</div>
+}
+@if (b.FailureMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@b.FailureMessage</div>
+}
+
+@if (isPreview)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5">Summary – nothing has been imported yet</h2>
+            <ul class="mb-3">
+                <li><strong>@creates</strong> new invoice(s) will be created.</li>
+                <li><strong>@updates</strong> existing invoice(s) differ from the file and will be updated only if you approve below.</li>
+                <li><strong>@unchanged</strong> invoice(s) already exist with the same details and will be skipped.</li>
+                <li><strong>@rejected</strong> row(s) have errors and will not be imported.</li>
+            </ul>
+            @if (Model.IsExpired)
+            {
+                <div class="alert alert-warning">This preview is older than 24 hours. Upload the file again.</div>
+            }
+            else if (creates + updates == 0)
+            {
+                <p class="mb-2">There is nothing to import. Correct the rejected rows in your file and upload it again.</p>
+                <form asp-action="Cancel" asp-route-id="@b.Id" method="post"><button type="submit" class="btn btn-outline-secondary">Discard this preview</button></form>
+            }
+            else
+            {
+                <form asp-action="Confirm" asp-route-id="@b.Id" method="post" class="d-inline">
+                    @if (updates > 0)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="approveUpdates" name="approveUpdates" value="true" />
+                            <label class="form-check-label" for="approveUpdates">Apply the @updates update(s) to existing invoices (changes are recorded in each invoice's history)</label>
+                        </div>
+                    }
+                    <button type="submit" class="btn btn-primary" data-confirm="Import the accepted rows now? Rows with errors will be skipped.">Confirm import</button>
+                </form>
+                <form asp-action="Cancel" asp-route-id="@b.Id" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-secondary">Cancel</button>
+                </form>
+            }
+        </div>
+    </div>
+}
+else if (b.Status == ImportBatchStatus.Committed)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5">Result</h2>
+            <p class="mb-0">
+                Created <strong>@b.CreatedCount</strong> · Updated <strong>@b.UpdatedCount</strong> · Skipped <strong>@b.SkippedCount</strong> · Rejected <strong>@b.RejectedRows</strong>
+                (of @b.TotalRows rows). No reminders were sent.
+            </p>
+        </div>
+    </div>
+}
+
+@if (rejected > 0 || b.RejectedRows > 0)
+{
+    <p><a class="btn btn-outline-danger btn-sm" asp-action="Errors" asp-route-id="@b.Id">Download rejected rows (CSV)</a></p>
+}
+
+<h2 class="h5">Rows</h2>
+<div class="table-responsive">
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Row</th><th scope="col">Customer</th><th scope="col">Invoice</th><th scope="col">Invoice date</th><th scope="col">Due date</th>
+                <th scope="col" class="text-end">Amount</th><th scope="col">@(isPreview ? "Planned action" : "Outcome")</th><th scope="col">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in b.Rows)
+            {
+                var isError = r.PlannedAction == ImportRowAction.Error || r.Outcome == ImportRowOutcome.Rejected;
+                <tr class="@(isError ? "table-danger" : "")">
+                    <td>@r.RowNumber</td>
+                    <td>@r.CustomerName @if (r.CustomerCode is not null) { <span class="text-muted small">(@r.CustomerCode)</span> }</td>
+                    <td>@r.InvoiceNumber</td>
+                    <td>@r.InvoiceDate</td>
+                    <td>@r.DueDate</td>
+                    <td class="text-end">@r.InvoiceAmount</td>
+                    <td>@(isPreview ? Ui.Label(r.PlannedAction) : Ui.Label(r.Outcome))</td>
+                    <td class="small">
+                        @foreach (var e in Ui.Lines(r.Errors)) { <div class="text-danger">✖ @e</div> }
+                        @foreach (var n in Ui.Lines(r.Notes)) { <div>@n</div> }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

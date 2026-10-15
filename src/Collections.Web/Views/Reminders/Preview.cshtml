@@ -1,0 +1,51 @@
+@model ReminderPreview
+@{
+    ViewData["Title"] = "Reminder preview";
+    var inv = Model.Invoice;
+}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+    <li class="breadcrumb-item"><a asp-controller="Customers" asp-action="Details" asp-route-id="@inv.CustomerId">@inv.CustomerName</a></li>
+    <li class="breadcrumb-item"><a asp-controller="Invoices" asp-action="Details" asp-route-id="@inv.Id">Invoice @inv.InvoiceNumber</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Reminder preview</li>
+</ol></nav>
+<h1 class="h3">Email reminder preview</h1>
+<p class="small text-muted">Review exactly what will be sent. Nothing is sent until you click Send. Reminders are only sent manually.</p>
+
+@if (!Model.CanSend)
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>This reminder cannot be sent:</strong>
+        <ul class="mb-0">
+            @foreach (var reason in Model.BlockingReasons) { <li>@reason</li> }
+        </ul>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <dl class="row mb-2">
+            <dt class="col-sm-3">From</dt><dd class="col-sm-9">@Model.FromDisplayName (replies go to @(Model.ReplyTo ?? "— not set"))</dd>
+            <dt class="col-sm-3">To</dt><dd class="col-sm-9">@(Model.Recipient ?? "— no email address")</dd>
+            <dt class="col-sm-3">Subject</dt><dd class="col-sm-9">@Model.Subject</dd>
+        </dl>
+        <div class="email-preview" aria-label="Email body">@Model.Body</div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">Invoice</h2>
+                <p class="mb-1">Outstanding: <strong>@Ui.Money(inv.Financials.Outstanding)</strong></p>
+                <p class="mb-1">Due: @Ui.Date(inv.DueDate) @Ui.Tag(Ui.Badge(inv.Financials.Status))</p>
+                @if (Model.CanSend)
+                {
+                    <form asp-action="Send" method="post" class="mt-3">
+                        <input type="hidden" name="invoiceId" value="@inv.Id" />
+                        <input type="hidden" name="idempotencyKey" value="@Model.IdempotencyKey" />
+                        <button type="submit" class="btn btn-primary w-100" data-confirm="Send this reminder to @Model.Recipient now?">Send reminder</button>
+                    </form>
+                }
+                <a class="btn btn-link w-100" asp-controller="Settings" asp-action="Index">Edit template</a>
+            </div>
+        </div>
+    </div>
+</div>

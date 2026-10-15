@@ -1,0 +1,73 @@
+@model InvoiceFormModel
+@{
+    var isNew = Model.Id is null;
+    ViewData["Title"] = isNew ? "Add invoice" : "Correct invoice " + Model.InvoiceNumber;
+}
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+@if (!isNew)
+{
+    <p class="text-muted">Invoice number and customer cannot be changed. Every correction is recorded in the invoice history.</p>
+}
+@if (isNew && Model.Customers.Count == 0)
+{
+    <div class="alert alert-info">Add a customer first. <a asp-controller="Customers" asp-action="Create">Add customer</a></div>
+}
+<form asp-action="@(isNew ? "Create" : "Edit")" asp-route-id="@Model.Id" method="post" class="col-lg-7" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <div class="row g-3">
+        @if (isNew)
+        {
+            <div class="col-md-7">
+                <label asp-for="CustomerId" class="form-label">Customer (required)</label>
+                <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
+                    <option value="0">Select a customer…</option>
+                </select>
+                <span asp-validation-for="CustomerId" class="text-danger small"></span>
+            </div>
+            <div class="col-md-5">
+                <label asp-for="InvoiceNumber" class="form-label">Invoice number (required)</label>
+                <input asp-for="InvoiceNumber" class="form-control" maxlength="@Invoice.NumberMaxLength" />
+                <span asp-validation-for="InvoiceNumber" class="text-danger small"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="CustomerId" />
+            <div class="col-12"><strong>Customer:</strong> @Model.CustomerName</div>
+        }
+        <div class="col-md-4">
+            <label asp-for="InvoiceDate" class="form-label">Invoice date</label>
+            <input asp-for="InvoiceDate" type="date" value="@Ui.InputDate(Model.InvoiceDate)" class="form-control" />
+            <span asp-validation-for="InvoiceDate" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="DueDate" class="form-label">Due date</label>
+            <input asp-for="DueDate" type="date" value="@Ui.InputDate(Model.DueDate)" class="form-control" />
+            <span asp-validation-for="DueDate" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="InvoiceAmount" class="form-label">Invoice amount (₹)</label>
+            <input asp-for="InvoiceAmount" type="number" step="0.01" min="0.01" value="@Ui.InputAmount(Model.InvoiceAmount)" class="form-control" />
+            <span asp-validation-for="InvoiceAmount" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ExternalReference" class="form-label">External reference</label>
+            <input asp-for="ExternalReference" class="form-control" maxlength="@Invoice.ExternalReferenceMaxLength" />
+            <span asp-validation-for="ExternalReference" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <div class="form-check">
+                <input asp-for="IsDisputed" class="form-check-input" />
+                <label asp-for="IsDisputed" class="form-check-label">Disputed (no reminders will be sent)</label>
+            </div>
+            <div class="form-check">
+                <input asp-for="RemindersPaused" class="form-check-input" />
+                <label asp-for="RemindersPaused" class="form-check-label">Pause reminders for this invoice</label>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-link" href="@(isNew ? Url.Action("Index") : Url.Action("Details", new { id = Model.Id }))">Cancel</a>
+    </div>
+</form>

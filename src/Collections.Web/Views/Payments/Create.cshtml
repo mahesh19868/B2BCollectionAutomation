@@ -1,0 +1,91 @@
+@model PaymentFormModel
+@{
+    ViewData["Title"] = "Record payment";
+}
+<h1 class="h3 mb-3">Record payment</h1>
+
+@if (Model.CustomerId <= 0)
+{
+    @if (Model.CustomerOptions.Count == 0)
+    {
+        <div class="alert alert-info">There are no active customers yet. <a asp-controller="Import" asp-action="Index">Import invoices</a> or <a asp-controller="Customers" asp-action="Create">add a customer</a>.</div>
+    }
+    else
+    {
+        <form method="get" asp-action="Create" class="row g-2 align-items-end col-lg-6">
+            <div class="col">
+                <label for="customerId" class="form-label">Which customer paid?</label>
+                <select id="customerId" name="customerId" class="form-select" asp-items="Model.CustomerOptions"></select>
+            </div>
+            <div class="col-auto"><button type="submit" class="btn btn-primary">Continue</button></div>
+        </form>
+    }
+}
+else
+{
+    <p>Customer: <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId"><strong>@Model.CustomerName</strong></a></p>
+    <form asp-action="Create" method="post" novalidate data-allocation-form>
+        <input type="hidden" asp-for="CustomerId" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <div class="row g-3 col-lg-9">
+            <div class="col-md-3">
+                <label asp-for="PaymentDate" class="form-label">Payment date</label>
+                <input asp-for="PaymentDate" type="date" value="@Ui.InputDate(Model.PaymentDate)" class="form-control" />
+                <span asp-validation-for="PaymentDate" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Amount" class="form-label">Amount received (₹)</label>
+                <input asp-for="Amount" type="number" step="0.01" min="0.01" value="@Ui.InputAmount(Model.Amount)" class="form-control" data-payment-amount />
+                <span asp-validation-for="Amount" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Reference" class="form-label">Reference (UTR / cheque no.)</label>
+                <input asp-for="Reference" class="form-control" maxlength="@Payment.ReferenceMaxLength" />
+                <span asp-validation-for="Reference" class="text-danger small"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label">Notes</label>
+                <input asp-for="Notes" class="form-control" maxlength="@Payment.NotesMaxLength" />
+                <span asp-validation-for="Notes" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <h2 class="h5 mt-4">Allocate to invoices</h2>
+        @if (Model.OpenInvoices.Count == 0)
+        {
+            <p class="text-muted">This customer has no open invoices. The payment will be recorded as unallocated.</p>
+        }
+        else
+        {
+            <p class="small text-muted">Enter how much of this payment applies to each invoice. Allocations cannot exceed an invoice's outstanding balance or the payment amount. Any remainder stays visible as unallocated.</p>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" data-auto-allocate>Allocate oldest first</button>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th scope="col">Invoice</th><th scope="col">Due date</th><th scope="col">Status</th><th scope="col" class="text-end">Outstanding</th><th scope="col" class="w-25">Allocate (₹)</th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.OpenInvoices.Count; i++)
+                        {
+                            var inv = Model.OpenInvoices[i];
+                            <tr>
+                                <td>@inv.InvoiceNumber</td>
+                                <td>@Ui.Date(inv.DueDate)</td>
+                                <td>@Ui.Tag(Ui.Badge(inv.Status))@(inv.DaysOverdue > 0 ? " " + inv.DaysOverdue + " days" : "")</td>
+                                <td class="text-end">@Ui.Money(inv.Outstanding)</td>
+                                <td>
+                                    <input type="hidden" name="Allocations[@i].InvoiceId" value="@inv.InvoiceId" />
+                                    <label class="visually-hidden" for="alloc-@i">Allocate to @inv.InvoiceNumber</label>
+                                    <input id="alloc-@i" name="Allocations[@i].Amount" type="number" step="0.01" min="0" class="form-control form-control-sm"
+                                           value="@Ui.InputAmount(Model.Allocations.ElementAtOrDefault(i)?.Amount)"
+                                           data-allocation data-outstanding="@Ui.InputAmount(inv.Outstanding)" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="small">Allocated: <strong data-allocated-total>₹0.00</strong> · Unallocated: <strong data-unallocated-total>₹0.00</strong></p>
+        }
+        <button type="submit" class="btn btn-primary">Record payment</button>
+        <a class="btn btn-link" asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">Cancel</a>
+    </form>
+}

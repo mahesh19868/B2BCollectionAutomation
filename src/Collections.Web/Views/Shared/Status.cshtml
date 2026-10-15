@@ -1,0 +1,20 @@
+@model int
+@{
+    ViewData["Title"] = Model == 404 ? "Not found" : "Error";
+}
+<h1 class="h3">@(Model == 404 ? "Page not found" : Model == 429 ? "Too many requests" : "Something went wrong")</h1>
+<p>
+    @if (Model == 404)
+    {
+        <text>The page or record does not exist, or it belongs to a different workspace.</text>
+    }
+    else if (Model == 429)
+    {
+        <text>You have made too many requests in a short time. Wait a minute and try again.</text>
+    }
+    else
+    {
+        <text>The request could not be completed (status @Model).</text>
+    }
+</p>
+<a asp-controller="Home" asp-action="Index">Go to the dashboard</a>

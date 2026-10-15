@@ -1,0 +1,42 @@
+@model FollowUpFormModel
+@{
+    ViewData["Title"] = "Add follow-up";
+}
+<h1 class="h3">Add follow-up</h1>
+<p>Customer: <strong>@Model.CustomerName</strong>@if (Model.InvoiceNumber is not null) { <span> · Invoice <strong>@Model.InvoiceNumber</strong></span> }</p>
+<form asp-action="Create" method="post" class="col-lg-6" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <input type="hidden" asp-for="CustomerId" />
+    <input type="hidden" asp-for="InvoiceId" />
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div class="row g-3">
+        <div class="col-md-5">
+            <label asp-for="ActivityType" class="form-label">Type</label>
+            <select asp-for="ActivityType" class="form-select">
+                <option value="@ActivityType.Call">Call</option>
+                <option value="@ActivityType.Email">Email</option>
+                <option value="@ActivityType.Note">Note</option>
+                <option value="@ActivityType.Other">Other</option>
+            </select>
+            <span asp-validation-for="ActivityType" class="text-danger small"></span>
+        </div>
+        <div class="col-md-7">
+            <label asp-for="Outcome" class="form-label">Outcome (optional)</label>
+            <input asp-for="Outcome" class="form-control" maxlength="@FollowUpActivity.OutcomeMaxLength" placeholder="e.g. Spoke to accounts, no answer" />
+            <span asp-validation-for="Outcome" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Notes" class="form-label">Notes (required)</label>
+            <textarea asp-for="Notes" class="form-control" rows="4" maxlength="@FollowUpActivity.NotesMaxLength"></textarea>
+            <span asp-validation-for="Notes" class="text-danger small"></span>
+        </div>
+        <div class="col-md-5">
+            <label asp-for="NextFollowUpDate" class="form-label">Next follow-up date</label>
+            <input asp-for="NextFollowUpDate" type="date" value="@Ui.InputDate(Model.NextFollowUpDate)" class="form-control" />
+            <span asp-validation-for="NextFollowUpDate" class="text-danger small"></span>
+        </div>
+    </div>
+    <p class="small text-muted mt-2">To record a commitment to pay, use <a asp-controller="Promises" asp-action="Create" asp-route-customerId="@Model.CustomerId" asp-route-invoiceId="@Model.InvoiceId" asp-route-returnUrl="@Model.ReturnUrl">Record promise</a> instead.</p>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-link" href="@(Model.ReturnUrl is not null && Url.IsLocalUrl(Model.ReturnUrl) ? Model.ReturnUrl : Url.Action("Details", "Customers", new { id = Model.CustomerId }))">Cancel</a>
+</form>

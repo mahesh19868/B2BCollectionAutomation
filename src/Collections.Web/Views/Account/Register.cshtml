@@ -1,0 +1,36 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Create workspace";
+}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <h1 class="h3 mb-3">Create a business workspace</h1>
+        <p class="text-muted small">All customers, invoices, follow-ups and reminders you add belong to this workspace only.</p>
+        <form asp-action="Register" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="BusinessName" class="form-label"></label>
+                <input asp-for="BusinessName" class="form-control" autocomplete="organization" />
+                <span asp-validation-for="BusinessName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" aria-describedby="pwHelp" />
+                <div id="pwHelp" class="form-text">At least 10 characters, with upper- and lower-case letters and a digit.</div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create workspace</button>
+        </form>
+        <p class="mt-3 small">Already registered? <a asp-action="Login">Sign in</a></p>
+    </div>
+</div>

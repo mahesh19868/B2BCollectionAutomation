@@ -1,0 +1,44 @@
+@model PagedResult<PaymentListItem>
+@{
+    ViewData["Title"] = "Payments";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Payments</h1>
+    <a class="btn btn-primary" asp-action="Create">Record payment</a>
+</div>
+<p class="small text-muted">Payments are entered manually and allocated to invoices. Payment import is not available yet.</p>
+
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-sm-6 col-lg-4">
+        <label for="search" class="visually-hidden">Search payments</label>
+        <input id="search" name="search" value="@ViewData["Search"]" class="form-control" placeholder="Customer or reference" />
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Search</button></div>
+</form>
+
+@if (Model.TotalCount == 0)
+{
+    <div class="card"><div class="card-body">No payments found. <a asp-action="Create">Record a payment</a>.</div></div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th scope="col">Date</th><th scope="col">Customer</th><th scope="col">Reference</th><th scope="col" class="text-end">Amount</th><th scope="col" class="text-end">Allocated</th><th scope="col" class="text-end">Unallocated</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Items)
+                {
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@p.Id">@Ui.Date(p.PaymentDate)</a></td>
+                        <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@p.CustomerId">@p.CustomerName</a></td>
+                        <td>@p.Reference</td>
+                        <td class="text-end">@Ui.Money(p.Amount)</td>
+                        <td class="text-end">@Ui.Money(p.Allocated)</td>
+                        <td class="text-end">@Ui.Money(p.Amount - p.Allocated)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount)" />
+}

@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – Collections</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="visually-hidden-focusable" href="#main">Skip to main content</a>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-3" aria-label="Main navigation">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-semibold" asp-controller="Home" asp-action="Index">Collections</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="mainNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Worklist" asp-action="Index">Worklist</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Customers" asp-action="Index">Customers</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Invoices" asp-action="Index">Invoices</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index">Payments</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Promises" asp-action="Index">Promises</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Reminders" asp-action="Index">Reminders</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Import" asp-action="Index">Import</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Settings" asp-action="Index">Settings</a></li>
+                        </ul>
+                        <span class="navbar-text me-3 small">@User.Identity?.Name</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Sign out</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid px-lg-4">
+        <main role="main" id="main" class="pb-4">
+            <partial name="_StatusMessages" />
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="border-top text-muted small py-2">
+        <div class="container-fluid px-lg-4">
+            Collections workflow aid – not an accounting ledger. Balances reflect imported and recorded data only.
+        </div>
+    </footer>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

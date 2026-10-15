@@ -1,0 +1,35 @@
+@model PromiseFormModel
+@{
+    ViewData["Title"] = "Record promise to pay";
+}
+<h1 class="h3">Record promise to pay</h1>
+<p>Customer: <strong>@Model.CustomerName</strong> · For: <strong>@(Model.InvoiceNumber is null ? "the whole account" : "invoice " + Model.InvoiceNumber)</strong></p>
+<div class="alert alert-info col-lg-6 small">
+    A promise is a commitment, not a payment. It does <strong>not</strong> reduce the outstanding balance.
+    When the date arrives, record whether it was kept or missed; the system never decides this automatically.
+</div>
+<form asp-action="Create" method="post" class="col-lg-6" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <input type="hidden" asp-for="CustomerId" />
+    <input type="hidden" asp-for="InvoiceId" />
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="PromisedAmount" class="form-label">Promised amount (₹)</label>
+            <input asp-for="PromisedAmount" type="number" step="0.01" min="0.01" value="@Ui.InputAmount(Model.PromisedAmount)" class="form-control" />
+            <span asp-validation-for="PromisedAmount" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="PromisedDate" class="form-label">Promised date</label>
+            <input asp-for="PromisedDate" type="date" value="@Ui.InputDate(Model.PromisedDate)" class="form-control" />
+            <span asp-validation-for="PromisedDate" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Notes" class="form-label">Notes</label>
+            <textarea asp-for="Notes" class="form-control" rows="3" maxlength="@PromiseToPay.NotesMaxLength" placeholder="Who promised, how they will pay"></textarea>
+            <span asp-validation-for="Notes" class="text-danger small"></span>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Save promise</button>
+    <a class="btn btn-link mt-3" href="@(Model.ReturnUrl is not null && Url.IsLocalUrl(Model.ReturnUrl) ? Model.ReturnUrl : Url.Action("Details", "Customers", new { id = Model.CustomerId }))">Cancel</a>
+</form>

@@ -1,0 +1,28 @@
+@model IReadOnlyList<PromiseItem>
+@{
+    ViewData["Title"] = "Promises to pay";
+    var current = (PromiseListView)ViewData["View"]!;
+    var asOf = (DateOnly)ViewData["AsOf"]!;
+}
+<h1 class="h3">Promises to pay</h1>
+<p class="small text-muted">As of @Ui.Date(asOf). "Date passed – unresolved" is calculated by the system for open promises whose date is before today. Only a user can mark a promise kept or missed.</p>
+<ul class="nav nav-tabs mb-3">
+    @foreach (var (view, label) in new[] { (PromiseListView.Open, "All open"), (PromiseListView.Missed, "Date passed"), (PromiseListView.Upcoming, "Upcoming"), (PromiseListView.Resolved, "Resolved"), (PromiseListView.All, "All") })
+    {
+        <li class="nav-item">
+            <a class="nav-link @(view == current ? "active" : "")" aria-current="@(view == current ? "page" : null)" asp-action="Index" asp-route-view="@view">@label</a>
+        </li>
+    }
+</ul>
+@if (Model.Count == 0)
+{
+    <p class="text-muted">No promises in this view. Record a promise from a customer, invoice or the <a asp-controller="Worklist" asp-action="Index">worklist</a>.</p>
+}
+else
+{
+    <partial name="_PromiseTable" model="Model" />
+    @if (Model.Count >= 500)
+    {
+        <p class="small text-muted">Showing the first 500 promises.</p>
+    }
+}

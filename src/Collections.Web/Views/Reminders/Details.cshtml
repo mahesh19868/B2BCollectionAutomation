@@ -1,0 +1,35 @@
+@model ReminderLog
+@{
+    ViewData["Title"] = "Reminder";
+    var tz = (string)ViewData["TimeZoneId"]!;
+}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+    <li class="breadcrumb-item"><a asp-action="Index">Reminder log</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Reminder #@Model.Id</li>
+</ol></nav>
+<h1 class="h3">Reminder #@Model.Id @Ui.Tag(Ui.Badge(Model.Status))</h1>
+<dl class="row col-lg-8">
+    <dt class="col-sm-3">Customer</dt><dd class="col-sm-9"><a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">@Model.Customer?.Name</a></dd>
+    @if (Model.Invoice is not null)
+    {
+        <dt class="col-sm-3">Invoice</dt><dd class="col-sm-9"><a asp-controller="Invoices" asp-action="Details" asp-route-id="@Model.InvoiceId">@Model.Invoice.InvoiceNumber</a></dd>
+    }
+    <dt class="col-sm-3">Recipient</dt><dd class="col-sm-9">@Model.Recipient</dd>
+    <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@Ui.DateTime(Model.CreatedAtUtc, tz)</dd>
+    <dt class="col-sm-3">Sent</dt><dd class="col-sm-9">@Ui.DateTime(Model.SentAtUtc, tz)</dd>
+    <dt class="col-sm-3">Attempts</dt><dd class="col-sm-9">@Model.AttemptCount</dd>
+    <dt class="col-sm-3">Provider message id</dt><dd class="col-sm-9"><code>@(Model.ProviderMessageId ?? "—")</code></dd>
+    @if (Model.LastError is not null)
+    {
+        <dt class="col-sm-3">Last error</dt><dd class="col-sm-9 text-danger">@Model.LastError</dd>
+    }
+    <dt class="col-sm-3">Subject</dt><dd class="col-sm-9">@Model.Subject</dd>
+</dl>
+<div class="email-preview col-lg-8 mb-3" aria-label="Email body as sent">@Model.Body</div>
+@if (Model.Status == ReminderStatus.Failed)
+{
+    <form asp-action="Retry" asp-route-id="@Model.Id" method="post">
+        <p class="small text-muted">Retry sends the same content again, only if the invoice is still eligible and its balance is unchanged.</p>
+        <button type="submit" class="btn btn-primary" data-confirm="Retry sending this reminder?">Retry</button>
+    </form>
+}

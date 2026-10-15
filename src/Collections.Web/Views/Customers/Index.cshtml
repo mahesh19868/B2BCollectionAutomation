@@ -1,0 +1,63 @@
+@model PagedResult<CustomerListItem>
+@{
+    ViewData["Title"] = "Customers";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Customers</h1>
+    <a class="btn btn-primary" asp-action="Create">Add customer</a>
+</div>
+
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-sm-6 col-lg-4">
+        <label for="search" class="visually-hidden">Search customers</label>
+        <input id="search" name="search" value="@ViewData["Search"]" class="form-control" placeholder="Name, code or email" />
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-outline-primary">Search</button></div>
+</form>
+
+@if (Model.TotalCount == 0)
+{
+    <div class="card"><div class="card-body">
+        @if (string.IsNullOrEmpty(ViewData["Search"] as string))
+        {
+            <p class="mb-2">No customers yet. Customers are created automatically when you import invoices.</p>
+            <p class="mb-0"><a asp-controller="Import" asp-action="Index">Import invoices</a> or <a asp-action="Create">add a customer</a>.</p>
+        }
+        else
+        {
+            <p class="mb-0">No customers match your search. <a asp-action="Index">Clear search</a></p>
+        }
+    </div></div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Customer</th><th scope="col">Code</th><th scope="col">Email</th>
+                    <th scope="col" class="text-end">Open invoices</th><th scope="col" class="text-end">Outstanding</th><th scope="col" class="text-end">Overdue</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Items)
+                {
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@c.Id">@c.Name</a></td>
+                        <td>@c.CustomerCode</td>
+                        <td>@(c.Email ?? "—")</td>
+                        <td class="text-end">@c.OpenInvoiceCount</td>
+                        <td class="text-end">@Ui.Money(c.Outstanding)</td>
+                        <td class="text-end">@Ui.Money(c.Overdue)</td>
+                        <td>
+                            @if (!c.IsActive) { <span class="badge text-bg-secondary">Inactive</span> }
+                            @if (c.RemindersPaused) { <span class="badge text-bg-warning">Reminders paused</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.TotalCount)" />
+}

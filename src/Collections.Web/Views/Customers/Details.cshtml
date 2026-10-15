@@ -1,0 +1,92 @@
+@model CustomerDetail
+@{
+    var c = Model.Customer;
+    ViewData["Title"] = c.Name;
+    var returnUrl = Context.Request.Path.ToString();
+    var noCustomerColumn = new ViewDataDictionary(ViewData) { ["ShowCustomer"] = false };
+}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Customers</a></li><li class="breadcrumb-item active" aria-current="page">@c.Name</li></ol></nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@c.Name</h1>
+        <div class="text-muted small">
+            @if (c.CustomerCode is not null) { <span>Code @c.CustomerCode · </span> }
+            Email: @(c.Email ?? "not set") · Phone: @(c.Phone ?? "not set")
+        </div>
+        <div class="mt-1">
+            @if (!c.IsActive) { <span class="badge text-bg-secondary">Inactive</span> }
+            @if (c.RemindersPaused) { <span class="badge text-bg-warning">Reminders paused</span> }
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary btn-sm" asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@c.Id">Add note</a>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="Promises" asp-action="Create" asp-route-customerId="@c.Id">Record promise</a>
+        <a class="btn btn-outline-primary btn-sm" asp-controller="Payments" asp-action="Create" asp-route-customerId="@c.Id">Record payment</a>
+        <a class="btn btn-outline-secondary btn-sm" asp-controller="Invoices" asp-action="Create" asp-route-customerId="@c.Id">Add invoice</a>
+        <a class="btn btn-outline-secondary btn-sm" asp-action="Edit" asp-route-id="@c.Id">Edit</a>
+        <form asp-action="PauseReminders" asp-route-id="@c.Id" method="post" class="d-inline">
+            <input type="hidden" name="paused" value="@(!c.RemindersPaused ? "true" : "false")" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button type="submit" class="btn btn-outline-warning btn-sm">@(c.RemindersPaused ? "Resume reminders" : "Pause reminders")</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="text-muted small">Outstanding</div><div class="fs-5 fw-semibold">@Ui.Money(Model.Outstanding)</div></div></div></div>
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="text-muted small">Overdue</div><div class="fs-5 fw-semibold">@Ui.Money(Model.Overdue)</div></div></div></div>
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="text-muted small">Unallocated payments</div><div class="fs-5 fw-semibold">@Ui.Money(Model.Unallocated)</div><div class="small text-muted">Received but not yet applied to an invoice</div></div></div></div>
+</div>
+
+@if (!string.IsNullOrEmpty(c.Notes))
+{
+    <div class="alert alert-light border text-pre-wrap">@c.Notes</div>
+}
+
+<h2 class="h5">Invoices</h2>
+@if (Model.Invoices.Count == 0)
+{
+    <p class="text-muted">No invoices for this customer. <a asp-controller="Invoices" asp-action="Create" asp-route-customerId="@c.Id">Add an invoice</a>.</p>
+}
+else
+{
+    <partial name="_InvoiceTable" model="Model.Invoices" view-data="noCustomerColumn" />
+}
+
+<div class="row g-4 mt-1">
+    <div class="col-xl-6">
+        <h2 class="h5">Follow-up history</h2>
+        <partial name="_ActivityList" model="Model.Activities" />
+    </div>
+    <div class="col-xl-6">
+        <h2 class="h5">Promises to pay</h2>
+        <partial name="_PromiseTable" model="Model.Promises" view-data="noCustomerColumn" />
+
+        <h2 class="h5 mt-4">Payments</h2>
+        @if (Model.Payments.Count == 0)
+        {
+            <p class="text-muted">No payments recorded.</p>
+        }
+        else
+        {
+            <table class="table table-sm">
+                <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col" class="text-end">Amount</th><th scope="col" class="text-end">Unallocated</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Payments)
+                    {
+                        <tr>
+                            <td><a asp-controller="Payments" asp-action="Details" asp-route-id="@p.Id">@Ui.Date(p.PaymentDate)</a></td>
+                            <td>@p.Reference</td>
+                            <td class="text-end">@Ui.Money(p.Amount)</td>
+                            <td class="text-end">@Ui.Money(p.Amount - p.Allocated)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <h2 class="h5 mt-4">Reminders</h2>
+        <partial name="_ReminderTable" model="Model.Reminders" view-data="noCustomerColumn" />
+    </div>
+</div>

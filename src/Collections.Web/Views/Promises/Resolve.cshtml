@@ -1,0 +1,36 @@
+@model ResolvePromiseModel
+@{
+    ViewData["Title"] = "Record promise outcome";
+    var p = Model.Promise;
+}
+<h1 class="h3">Record promise outcome</h1>
+@if (p is not null)
+{
+    <p>
+        <strong>@p.CustomerName</strong> promised <strong>@Ui.Money(p.PromisedAmount)</strong> by <strong>@Ui.Date(p.PromisedDate)</strong>
+        for @(p.InvoiceNumber is null ? "the whole account" : "invoice " + p.InvoiceNumber).
+        Current status: @Ui.Tag(Ui.Badge(p.DisplayState))
+    </p>
+}
+<p class="small text-muted col-lg-7">Mark <em>Kept</em> only when you have confirmed the payment was received (record the payment separately). The outcome cannot be changed afterwards.</p>
+<form asp-action="Resolve" method="post" class="col-lg-6" novalidate>
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ReturnUrl" />
+    <fieldset class="mb-3">
+        <legend class="form-label fs-6">Outcome</legend>
+        @foreach (var (value, label) in new[] { (PromiseStatus.Kept, "Kept – payment received"), (PromiseStatus.Missed, "Missed – payment not received"), (PromiseStatus.Cancelled, "Cancelled – no longer applicable") })
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="radio" asp-for="Outcome" value="@value" id="outcome-@value" />
+                <label class="form-check-label" for="outcome-@value">@label</label>
+            </div>
+        }
+    </fieldset>
+    <div class="mb-3">
+        <label asp-for="ResolutionNotes" class="form-label">Notes</label>
+        <textarea asp-for="ResolutionNotes" class="form-control" rows="3" maxlength="@PromiseToPay.NotesMaxLength"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Save outcome</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>

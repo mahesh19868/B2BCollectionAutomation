@@ -1,0 +1,71 @@
+@model IReadOnlyList<PromiseItem>
+@inject BusinessService Business
+@{
+    var tz = (await Business.GetCurrentAsync(default)).TimeZoneId;
+    var showCustomer = ViewData["ShowCustomer"] as bool? ?? true;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+@if (Model.Count == 0)
+{
+    <p class="text-muted">No promises to pay recorded.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    @if (showCustomer) { <th scope="col">Customer</th> }
+                    <th scope="col">For</th>
+                    <th scope="col">Promised date</th>
+                    <th scope="col" class="text-end">Amount</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Recorded</th>
+                    <th scope="col">Notes</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        @if (showCustomer) { <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@p.CustomerId">@p.CustomerName</a></td> }
+                        <td>
+                            @if (p.InvoiceId is { } invoiceId)
+                            {
+                                <a asp-controller="Invoices" asp-action="Details" asp-route-id="@invoiceId">@p.InvoiceNumber</a>
+                            }
+                            else
+                            {
+                                <text>Whole account</text>
+                            }
+                        </td>
+                        <td>@Ui.Date(p.PromisedDate)</td>
+                        <td class="text-end">@Ui.Money(p.PromisedAmount)</td>
+                        <td>
+                            @Ui.Tag(Ui.Badge(p.DisplayState))
+                            @if (p.ResolvedAtUtc is not null)
+                            {
+                                <div class="small text-muted">by @(p.ResolvedBy ?? "user") on @Ui.DateTime(p.ResolvedAtUtc, tz)</div>
+                            }
+                        </td>
+                        <td class="small">@Ui.DateTime(p.CreatedAtUtc, tz)<br />@p.CreatedBy</td>
+                        <td class="small">
+                            <div class="text-pre-wrap">@p.Notes</div>
+                            @if (p.ResolutionNotes is not null)
+                            {
+                                <div class="text-pre-wrap fst-italic">Outcome: @p.ResolutionNotes</div>
+                            }
+                        </td>
+                        <td>
+                            @if (p.Status == PromiseStatus.Open)
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Promises" asp-action="Resolve" asp-route-id="@p.Id" asp-route-returnUrl="@returnUrl">Record outcome</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

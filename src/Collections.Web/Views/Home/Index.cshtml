@@ -1,0 +1,113 @@
+﻿@model DashboardData
+@{
+    ViewData["Title"] = "Dashboard";
+    var t = Model.Totals;
+}
+<div class="d-flex flex-wrap justify-content-between align-items-baseline mb-3">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <div class="text-muted small">
+        As of @Ui.Date(Model.AsOfDate) (business-local date) ·
+        Data last imported: @(Model.LastImportUtc is null ? "never" : Ui.DateTime(Model.LastImportUtc, Model.TimeZoneId))
+    </div>
+</div>
+
+@if (Model.InvoiceCount == 0)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">No invoices yet</h2>
+            <p class="mb-3">Import your outstanding invoices from a CSV export, or add a customer and invoice by hand.</p>
+            <a class="btn btn-primary" asp-controller="Import" asp-action="Index">Import invoices</a>
+            <a class="btn btn-outline-secondary" asp-controller="Customers" asp-action="Create">Add a customer</a>
+            <a class="btn btn-outline-secondary" asp-controller="Settings" asp-action="Index">Review settings</a>
+        </div>
+    </div>
+}
+else
+{
+    @if (t.InvalidInvoiceCount > 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <strong>@t.InvalidInvoiceCount invoice(s) have a data error</strong> (payments allocated exceed the invoice amount) and are excluded from the totals below.
+            <a asp-controller="Invoices" asp-action="Index" asp-route-Status="@InvoiceListStatus.DataError">Review them</a>.
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Total outstanding</div>
+                <div class="fs-4 fw-semibold">@Ui.Money(t.TotalOutstanding)</div>
+                <div class="small">@t.OutstandingInvoiceCount open invoice(s)</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100 border-danger"><div class="card-body">
+                <div class="text-muted small">Overdue (due date before today)</div>
+                <div class="fs-4 fw-semibold">@Ui.Money(t.OverdueAmount)</div>
+                <div class="small"><a asp-controller="Worklist" asp-action="Index" asp-route-Status="@WorklistStatus.Overdue">@t.OverdueInvoiceCount overdue invoice(s)</a></div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Due in next 7 days (incl. today)</div>
+                <div class="fs-4 fw-semibold">@Ui.Money(t.DueNext7DaysAmount)</div>
+                <div class="small">Due today: @Ui.Money(t.DueTodayAmount)</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Collections this month</div>
+                <div class="fs-4 fw-semibold">@Ui.Money(t.CollectionsThisMonth)</div>
+                <div class="small">Payments recorded with a date in @Model.AsOfDate.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="h5">Ageing of outstanding balances</h2>
+            <table class="table table-sm align-middle">
+                <thead><tr><th scope="col">Bucket</th><th scope="col" class="text-end">Invoices</th><th scope="col" class="text-end">Outstanding</th></tr></thead>
+                <tbody>
+                    @foreach (var b in t.Ageing)
+                    {
+                        <tr>
+                            <td><a asp-controller="Invoices" asp-action="Index" asp-route-Bucket="@b.Bucket">@Ui.Label(b.Bucket)</a></td>
+                            <td class="text-end">@b.InvoiceCount</td>
+                            <td class="text-end">@Ui.Money(b.Amount)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot><tr class="fw-semibold"><td>Total</td><td class="text-end">@t.OutstandingInvoiceCount</td><td class="text-end">@Ui.Money(t.TotalOutstanding)</td></tr></tfoot>
+            </table>
+            <p class="small text-muted">Days overdue are calendar days after the due date. Paid invoices are excluded.</p>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h5">Promises to pay</h2>
+            <p class="mb-2">
+                <a asp-controller="Promises" asp-action="Index" asp-route-view="@PromiseListView.Missed"><strong>@t.MissedPromiseCount</strong> open promise(s) past their date</a>
+                · <a asp-controller="Promises" asp-action="Index" asp-route-view="@PromiseListView.Upcoming">@t.UpcomingPromiseCount upcoming</a>
+            </p>
+            <p class="small text-muted">"Past their date" is calculated by the system for open promises; it is not a confirmed outcome. Promises never reduce invoice balances.</p>
+            @if (Model.MissedPromises.Count > 0)
+            {
+                <table class="table table-sm">
+                    <thead><tr><th scope="col">Customer</th><th scope="col">Invoice</th><th scope="col">Promised date</th><th scope="col" class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.MissedPromises)
+                        {
+                            <tr>
+                                <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@p.CustomerId">@p.CustomerName</a></td>
+                                <td>@(p.InvoiceNumber ?? "Account")</td>
+                                <td>@Ui.Date(p.PromisedDate)</td>
+                                <td class="text-end">@Ui.Money(p.PromisedAmount)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            <a class="btn btn-primary" asp-controller="Worklist" asp-action="Index">Open today's worklist</a>
+        </div>
+    </div>
+}

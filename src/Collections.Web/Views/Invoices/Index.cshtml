@@ -1,0 +1,61 @@
+@model InvoiceListModel
+@{
+    ViewData["Title"] = "Invoices";
+    var f = Model.Filter;
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Invoices</h1>
+    <div>
+        <a class="btn btn-outline-secondary" asp-controller="Import" asp-action="Index">Import CSV</a>
+        <a class="btn btn-primary" asp-action="Create">Add invoice</a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-3" role="search">
+    <div class="col-sm-6 col-lg-3">
+        <label for="Search" class="form-label small">Invoice no. or customer</label>
+        <input id="Search" name="Search" value="@f.Search" class="form-control" />
+    </div>
+    <div class="col-sm-3 col-lg-2">
+        <label for="Status" class="form-label small">Status</label>
+        <select id="Status" name="Status" class="form-select">
+            @foreach (var (value, label) in new[] {
+                (InvoiceListStatus.Outstanding, "Outstanding"), (InvoiceListStatus.Overdue, "Overdue"), (InvoiceListStatus.DueToday, "Due today"),
+                (InvoiceListStatus.NotDue, "Not due"), (InvoiceListStatus.Paid, "Paid"), (InvoiceListStatus.DataError, "Data error"), (InvoiceListStatus.All, "All invoices") })
+            {
+                <option value="@value" selected="@(f.Status == value)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-sm-3 col-lg-2">
+        <label for="Bucket" class="form-label small">Ageing</label>
+        <select id="Bucket" name="Bucket" class="form-select">
+            <option value="">All ages</option>
+            @foreach (var b in new[] { AgeingBucket.NotDue, AgeingBucket.Days1To30, AgeingBucket.Days31To60, AgeingBucket.Days61Plus })
+            {
+                <option value="@b" selected="@(f.Bucket == b)">@Ui.Label(b)</option>
+            }
+        </select>
+    </div>
+    @if (f.CustomerId is not null)
+    {
+        <input type="hidden" name="CustomerId" value="@f.CustomerId" />
+    }
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">Apply</button>
+        <a class="btn btn-link" asp-action="Index">Reset</a>
+    </div>
+</form>
+<p class="small text-muted">Status and days overdue are calculated as of @Ui.Date(Model.AsOfDate). "Outstanding" lists every invoice with a balance to collect.</p>
+
+@if (Model.Page.TotalCount == 0)
+{
+    <div class="card"><div class="card-body">
+        <p class="mb-0">No invoices match these filters. <a asp-action="Index">Show all outstanding invoices</a> or <a asp-controller="Import" asp-action="Index">import invoices</a>.</p>
+    </div></div>
+}
+else
+{
+    <partial name="_InvoiceTable" model="Model.Page.Items" />
+    <partial name="_Pager" model="(Model.Page.Page, Model.Page.TotalPages, Model.Page.TotalCount)" />
+}
