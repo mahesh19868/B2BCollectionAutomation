@@ -35,28 +35,28 @@ else
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
+            <div class="card h-100 kpi-card kpi-primary"><div class="card-body">
                 <div class="text-muted small">Total outstanding</div>
                 <div class="fs-4 fw-semibold">@Ui.Money(t.TotalOutstanding)</div>
                 <div class="small">@t.OutstandingInvoiceCount open invoice(s)</div>
             </div></div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card h-100 border-danger"><div class="card-body">
+            <div class="card h-100 kpi-card kpi-danger"><div class="card-body">
                 <div class="text-muted small">Overdue (due date before today)</div>
                 <div class="fs-4 fw-semibold">@Ui.Money(t.OverdueAmount)</div>
                 <div class="small"><a asp-controller="Worklist" asp-action="Index" asp-route-Status="@WorklistStatus.Overdue">@t.OverdueInvoiceCount overdue invoice(s)</a></div>
             </div></div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
+            <div class="card h-100 kpi-card kpi-warning"><div class="card-body">
                 <div class="text-muted small">Due in next 7 days (incl. today)</div>
                 <div class="fs-4 fw-semibold">@Ui.Money(t.DueNext7DaysAmount)</div>
                 <div class="small">Due today: @Ui.Money(t.DueTodayAmount)</div>
             </div></div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
+            <div class="card h-100 kpi-card kpi-success"><div class="card-body">
                 <div class="text-muted small">Collections this month</div>
                 <div class="fs-4 fw-semibold">@Ui.Money(t.CollectionsThisMonth)</div>
                 <div class="small">Payments recorded with a date in @Model.AsOfDate.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</div>

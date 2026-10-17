@@ -10,30 +10,37 @@
 <body>
     <a class="visually-hidden-focusable" href="#main">Skip to main content</a>
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-3" aria-label="Main navigation">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-semibold" asp-controller="Home" asp-action="Index">Collections</a>
+        <nav class="navbar navbar-expand-lg navbar-dark app-navbar mb-4" aria-label="Main navigation">
+            <div class="container-fluid px-lg-4">
+                <a class="navbar-brand app-brand" asp-controller="Home" asp-action="Index">
+                    <span class="app-brand-mark" aria-hidden="true">₹</span>Collections
+                </a>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
+                    var currentController = ViewContext.RouteData.Values["controller"] as string;
+                    var navItems = new[]
+                    {
+                        ("Home", "Dashboard"), ("Worklist", "Worklist"), ("Customers", "Customers"), ("Invoices", "Invoices"),
+                        ("Payments", "Payments"), ("Promises", "Promises"), ("Reminders", "Reminders"), ("Import", "Import"), ("Settings", "Settings"),
+                    };
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav"
                             aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="mainNav">
                         <ul class="navbar-nav me-auto">
-                            <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Worklist" asp-action="Index">Worklist</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Customers" asp-action="Index">Customers</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Invoices" asp-action="Index">Invoices</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index">Payments</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Promises" asp-action="Index">Promises</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Reminders" asp-action="Index">Reminders</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Import" asp-action="Index">Import</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Settings" asp-action="Index">Settings</a></li>
+                            @foreach (var (controller, label) in navItems)
+                            {
+                                var isActive = string.Equals(controller, currentController, StringComparison.OrdinalIgnoreCase);
+                                <li class="nav-item">
+                                    <a class="nav-link @(isActive ? "active" : null)" aria-current="@(isActive ? "page" : null)"
+                                       asp-controller="@controller" asp-action="Index">@label</a>
+                                </li>
+                            }
                         </ul>
-                        <span class="navbar-text me-3 small">@User.Identity?.Name</span>
+                        <span class="navbar-text me-3 small app-user">@User.Identity?.Name</span>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">Sign out</button>
+                            <button type="submit" class="btn btn-outline-light btn-sm">Sign out</button>
                         </form>
                     </div>
                 }
@@ -46,7 +53,7 @@
             @RenderBody()
         </main>
     </div>
-    <footer class="border-top text-muted small py-2">
+    <footer class="app-footer text-muted small py-3">
         <div class="container-fluid px-lg-4">
             Collections workflow aid – not an accounting ledger. Balances reflect imported and recorded data only.
         </div>
